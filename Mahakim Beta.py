@@ -22,7 +22,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-# ===== CONFIG =====
 TARGET_URL = "https://www.mahakim.ma/#/suivi/rapport-police-judiciaire"
 START_NUM = 1
 END_NUM = 3000
@@ -33,9 +32,7 @@ HEADLESS = False
 MIN_DELAY = 0.8
 MAX_DELAY = 2.2
 RETRIES = 3
-# ==================
 
-# ===== INIT DRIVER =====
 def init_driver():
     options = webdriver.ChromeOptions()
     if HEADLESS:
@@ -52,7 +49,6 @@ def init_driver():
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     return driver
 
-# ===== PROGRESS =====
 def read_progress():
     if os.path.exists(PROGRESS_FILE):
         try:
@@ -71,11 +67,9 @@ def write_progress(n, info=""):
             f.write(info + "\n")
         f.write(f"PROGRESS: {n}\n")
 
-# ===== PROPER EXCEL APPEND =====
 def append_to_excel(rows):
     if not rows:
         return
-
     columns = [
         "رقم المحضر بالمحكمة",
         "الإجراء", 
@@ -86,7 +80,6 @@ def append_to_excel(rows):
         "الرقم المستعلم",
         "السنة المستعلم بها"
     ]
-
     mapped_data = []
     for row in rows:
         mapped_row = {
@@ -100,9 +93,7 @@ def append_to_excel(rows):
             "السنة المستعلم بها": row.get("queried_annee", "")
         }
         mapped_data.append(mapped_row)
-
     df = pd.DataFrame(mapped_data, columns=columns)
-
     if os.path.exists(OUTPUT_XLSX):
         wb = load_workbook(OUTPUT_XLSX)
         ws = wb.active
@@ -112,10 +103,8 @@ def append_to_excel(rows):
     else:
         with pd.ExcelWriter(OUTPUT_XLSX, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name="Results")
-
     print(f"💾 Appended {len(rows)} new rows to Excel ({OUTPUT_XLSX})")
 
-# ===== HELPER FUNCTIONS =====
 def js_click(driver, element):
     driver.execute_script("arguments[0].click();", element)
 
@@ -135,20 +124,16 @@ def wait_for_results(driver, timeout=10):
     except TimeoutException:
         return False
 
-# ===== DROPDOWN SELECTION WITH PROGRESS =====
 def select_dropdown(driver, placeholder_text, option_to_select, step_number):
     info_lines = [f"=== STEP {step_number}: Selecting {placeholder_text} ==="]
     wait = WebDriverWait(driver, 15)
     dropdown_xpath = f"//span[contains(@class, 'p-dropdown-label') and contains(@class, 'p-placeholder') and contains(text(), '{placeholder_text}')]/ancestor::div[contains(@class, 'p-dropdown')]"
     dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, dropdown_xpath)))
-    
     info_lines.append(f"Found dropdown: {placeholder_text}")
     js_click(driver, dropdown)
     time.sleep(1)
-    
     wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'p-dropdown-panel')]")))
     time.sleep(0.5)
-    
     option_xpath = f"//li[contains(@class, 'p-dropdown-item')]//span[contains(text(), '{option_to_select}')]"
     try:
         option = wait.until(EC.element_to_be_clickable((By.XPATH, option_xpath)))
@@ -162,7 +147,7 @@ def select_dropdown(driver, placeholder_text, option_to_select, step_number):
         dropdown.click()
         time.sleep(0.5)
     finally:
-        write_progress(0, "\n".join(info_lines))  # Save step info to progress
+        write_progress(0, "\n".join(info_lines))
 
 def click_checkbox_with_progress(driver):
     info_lines = ["=== STEP 2: Clicking Checkbox ==="]
@@ -179,24 +164,19 @@ def fill_case_details(driver, case_number, year):
     wait = WebDriverWait(driver, 10)
     container_xpath = "//div[contains(@class, 'three-inputs')]"
     container = wait.until(EC.presence_of_element_located((By.XPATH, container_xpath)))
-    
     numero_input = container.find_element(By.XPATH, ".//input[@formcontrolname='numero' and contains(@class, 'right')]")
     annee_input = container.find_element(By.XPATH, ".//input[@formcontrolname='annee' and contains(@class, 'left')]")
-    
     numero_input.clear()
     numero_input.send_keys(str(case_number))
-    
     annee_input.clear()
     annee_input.send_keys(str(year))
     annee_input.send_keys(Keys.ENTER)
-    
     if wait_for_results(driver, 10):
         print("  ✅ Results loaded")
     else:
         print("  ⚠️  Results timeout")
     time.sleep(1)
 
-# ===== ROBUST TABLE DETECTION =====
 def robust_table_detection(driver, case_number):
     print(f"\n Checking for data in case {case_number}...")
     try:
@@ -206,7 +186,6 @@ def robust_table_detection(driver, case_number):
                 if element.is_displayed():
                     return "no_results", []
     except: pass
-    
     try:
         table = driver.find_element(By.ID, "pr_id_16-table")
         if table.is_displayed():
@@ -214,7 +193,6 @@ def robust_table_detection(driver, case_number):
             if data:
                 return "has_data", data
     except: pass
-    
     try:
         all_tables = driver.find_elements(By.TAG_NAME, "table")
         for table in all_tables:
@@ -223,19 +201,16 @@ def robust_table_detection(driver, case_number):
                 if data:
                     return "has_data", data
     except: pass
-    
     try:
         case_elements = driver.find_elements(By.XPATH, "//*[contains(text(), '/') and contains(text(), '2025')]")
         if case_elements:
             return "possible_data", []
     except: pass
-    
     try:
         loading = driver.find_elements(By.XPATH, "//*[contains(text(), 'جاري') or contains(text(), 'تحميل') or contains(text(), 'loading')]")
         if loading:
             return "loading", []
     except: pass
-
     return "unknown", []
 
 def parse_table_by_element(table_element, case_number):
@@ -260,7 +235,6 @@ def parse_table_by_element(table_element, case_number):
                 data_rows.append(row_data)
     return data_rows
 
-# ===== RUN SCRAPER =====
 def run_scraper():
     start_resume = read_progress()
     if start_resume:
@@ -269,17 +243,12 @@ def run_scraper():
     else:
         start_n = START_NUM
         print(f" Starting from number {start_n}")
-
     driver = init_driver()
     driver.get(TARGET_URL)
     time.sleep(5)
-
-    # --- Setup Steps with progress ---
     select_dropdown(driver, "اختيار محكمة الاستئناف", "محكمة الاستئناف بمراكش", 1)
     click_checkbox_with_progress(driver)
     select_dropdown(driver, "اختيار المحكمة الإبتدائية", "المحكمة الابتدائية بمراكش", 3)
-
-    # Police unit
     print("\n=== STEP 4: Selecting Police Unit ===")
     blank_dropdowns = driver.find_elements(By.XPATH, "//span[contains(@class, 'p-dropdown-label') and contains(@class, 'p-placeholder') and contains(text(), '---')]/ancestor::div[contains(@class, 'p-dropdown')]")
     if blank_dropdowns:
@@ -295,8 +264,6 @@ def run_scraper():
                 time.sleep(1)
                 write_progress(0, f"=== STEP 4: Selecting Police Unit ===\nAvailable police units: {available_options}\n✓ Selected police unit: {selected_unit}")
                 break
-
-    # Police station
     print("\n=== STEP 5: Selecting Police Station ===")
     if len(blank_dropdowns) >= 2:
         second_dropdown = blank_dropdowns[1]
@@ -311,8 +278,6 @@ def run_scraper():
                 time.sleep(1)
                 write_progress(0, f"=== STEP 5: Selecting Police Station ===\nAvailable police stations: {available_options}\n✓ Selected police station: {selected_station}")
                 break
-
-    # --- Start scraping ---
     for n in range(start_n, END_NUM + 1):
         write_progress(n)
         attempt = 0
@@ -343,10 +308,8 @@ def run_scraper():
                 time.sleep(MIN_DELAY + random.random() * (MAX_DELAY - MIN_DELAY))
             except Exception as e:
                 print(f"Error {n}: {e}")
-
     print("\n✅ Scraping completed!")
     driver.quit()
 
-# ===== MAIN =====
 if __name__ == "__main__":
     run_scraper()
