@@ -1,5 +1,6 @@
 # Mahakim Beta Enhanced Progress.py
 # Scraper for Mahakim.ma with robust table detection and parsing by Mouadev
+#Preconfigured for Marrakech > Ait Ourir > GR Reports 
 import time
 import random
 import os
@@ -313,3 +314,4 @@ def run_scraper():
 
 if __name__ == "__main__":
     run_scraper()
+
