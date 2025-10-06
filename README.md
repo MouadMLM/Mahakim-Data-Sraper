@@ -6,7 +6,7 @@ Automated scraper for [Mahakim.ma](https://www.mahakim.ma) to extract judicial p
 This scraper only collects **information publicly available** on Mahakim.ma. No private or confidential data is accessed. Use responsibly and in compliance with local regulations.
 
 ---
-
+---- Preconfigured for Marrakech > Ait Ourir > GR Reports ---
 ## Features
 
 - ✅ Dynamic dropdown selection for court, police unit, and police station.
