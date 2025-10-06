@@ -26,8 +26,4 @@ This scraper only collects **information publicly available** on Mahakim.ma. No 
 - Packages:
 
 ```bash
-pip install selenium webdriver-manager pandas openpyxl
-selenium>=4.12.0
-webdriver-manager>=4.0.0
-pandas>=2.1.0
-openpyxl>=3.1.2
+pip install selenium>=4.12.0 webdriver-manager>=4.0.0 pandas>=2.1.0 openpyxl>=3.1.2
